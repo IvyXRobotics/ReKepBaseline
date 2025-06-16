@@ -8,6 +8,7 @@ import math
 from numba import njit
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import torch
 
 PI = np.pi
 EPS = np.finfo(float).eps * 4.0
@@ -455,9 +456,20 @@ def pose2mat(pose):
     Returns:
         np.array: 4x4 homogeneous matrix
     """
-    homo_pose_mat = np.zeros((4, 4), dtype=pose[0].dtype)
+
+    TORCH_TO_NUMPY_DTYPE = {
+        torch.float32: np.float32,
+        torch.float64: np.float64,
+        torch.int32: np.int32,
+        torch.int64: np.int64,
+        torch.uint8: np.uint8,
+        torch.bool: np.bool_,
+    }
+    torch_dtype = pose[0].dtype
+    np_dtype = TORCH_TO_NUMPY_DTYPE.get(torch_dtype, None)
+    homo_pose_mat = np.zeros((4, 4), dtype=np_dtype)
     homo_pose_mat[:3, :3] = quat2mat(pose[1])
-    homo_pose_mat[:3, 3] = np.array(pose[0], dtype=pose[0].dtype)
+    homo_pose_mat[:3, 3] = np.array(pose[0], dtype=np_dtype)
     homo_pose_mat[3, 3] = 1.0
     return homo_pose_mat
 

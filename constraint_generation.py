@@ -1,3 +1,6 @@
+import httpx
+from httpx_socks import SyncProxyTransport
+
 import base64
 from openai import OpenAI
 import os
@@ -16,7 +19,11 @@ def encode_image(image_path):
 class ConstraintGenerator:
     def __init__(self, config):
         self.config = config
-        self.client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+        
+        transport = SyncProxyTransport.from_url("socks5://127.0.0.1:7897")
+        http_client = httpx.Client(transport=transport)
+        self.client = OpenAI(api_key=os.environ['OPENAI_API_KEY'], http_client=http_client)
+
         self.base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), './vlm_query')
         with open(os.path.join(self.base_dir, 'prompt_template.txt'), 'r') as f:
             self.prompt_template = f.read()

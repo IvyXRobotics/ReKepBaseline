@@ -16,7 +16,7 @@ main:
 env:
   video_cache_size: 2000
   og_sim:
-    physics_frequency: 100
+    physics_frequency: 60
     action_frequency: 15
     
   scene:
