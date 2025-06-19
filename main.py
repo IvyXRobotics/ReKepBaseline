@@ -1,3 +1,5 @@
+import debug_config
+import pdb
 import torch
 import numpy as np
 import json
@@ -53,6 +55,7 @@ class Main:
         # initialize visualizer
         if self.visualize:
             self.visualizer = Visualizer(global_config['visualizer'], self.env)
+        breakpoint()
 
     def perform_task(self, instruction, rekep_program_dir=None, disturbance_seq=None):
         self.env.reset()
@@ -75,6 +78,7 @@ class Main:
         # = execute
         # ====================================
         self._execute(rekep_program_dir, disturbance_seq)
+        breakpoint()
 
     def _update_disturbance_seq(self, stage, disturbance_seq):
         if disturbance_seq is not None:
@@ -82,6 +86,7 @@ class Main:
                 # set the disturbance sequence, the generator will yield and instantiate one disturbance function for each env.step until it is exhausted
                 self.env.disturbance_seq = disturbance_seq[stage](self.env)
                 self.applied_disturbance[stage] = True
+        breakpoint()
 
     def _execute(self, rekep_program_dir, disturbance_seq=None):
         # load metadata
@@ -103,7 +108,6 @@ class Main:
         # bookkeeping of which keypoints can be moved in the optimization
         self.keypoint_movable_mask = np.zeros(self.program_info['num_keypoints'] + 1, dtype=bool)
         self.keypoint_movable_mask[0] = True  # first keypoint is always the ee, so it's movable
-
         # main loop
         self.last_sim_step_counter = -np.inf
         self._update_stage(1)
@@ -156,7 +160,6 @@ class Main:
                 self.first_iter = False
                 self.action_queue = next_path.tolist()
                 self.last_sim_step_counter = self.env.step_counter
-
                 # ====================================
                 # = execute
                 # ====================================
@@ -180,6 +183,7 @@ class Main:
                         return
                     # progress to next stage
                     self._update_stage(self.stage + 1)
+            breakpoint()
 
     def _get_next_subgoal(self, from_scratch):
         subgoal_constraints = self.constraint_fns[self.stage]['subgoal']
@@ -202,6 +206,7 @@ class Main:
         print_opt_debug_dict(debug_dict)
         if self.visualize:
             self.visualizer.visualize_subgoal(subgoal_pose)
+        breakpoint()
         return subgoal_pose
 
     def _get_next_path(self, next_subgoal, from_scratch):
@@ -219,6 +224,7 @@ class Main:
         processed_path = self._process_path(path)
         if self.visualize:
             self.visualizer.visualize_path(processed_path)
+        breakpoint()
         return processed_path
 
     def _process_path(self, path):
@@ -235,6 +241,7 @@ class Main:
         ee_action_seq = np.zeros((dense_path.shape[0], 8))
         ee_action_seq[:, :7] = dense_path
         ee_action_seq[:, 7] = self.env.get_gripper_null_action()
+        breakpoint()
         return ee_action_seq
 
     def _update_stage(self, stage):
@@ -251,11 +258,13 @@ class Main:
         # update keypoint movable mask
         self._update_keypoint_movable_mask()
         self.first_iter = True
+        breakpoint()
 
     def _update_keypoint_movable_mask(self):
         for i in range(1, len(self.keypoint_movable_mask)):  # first keypoint is ee so always movable
             keypoint_object = self.env.get_object_by_keypoint(i - 1)
             self.keypoint_movable_mask[i] = self.env.is_grasping(keypoint_object)
+        breakpoint()
 
     def _execute_grasp_action(self):
         pregrasp_pose = self.env.get_ee_pose()
@@ -263,9 +272,11 @@ class Main:
         grasp_pose[:3] += T.quat2mat(pregrasp_pose[3:]) @ np.array([self.config['grasp_depth'], 0, 0])
         grasp_action = np.concatenate([grasp_pose, [self.env.get_gripper_close_action()]])
         self.env.execute_action(grasp_action, precise=True)
+        breakpoint()
     
     def _execute_release_action(self):
         self.env.open_gripper()
+        breakpoint()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -273,8 +284,7 @@ if __name__ == "__main__":
     parser.add_argument('--use_cached_query', action='store_true', help='instead of querying the VLM, use the cached query')
     parser.add_argument('--apply_disturbance', action='store_true', help='apply disturbance to test the robustness')
     parser.add_argument('--visualize', action='store_true', help='visualize each solution before executing (NOTE: this is blocking and needs to press "ESC" to continue)')
-    args = parser.parse_args()
-
+    args = parser.parse_args()  # Namespace(task='pen', use_cached_query=False, apply_disturbance=False, visualize=False)
     if args.apply_disturbance:
         assert args.task == 'pen' and args.use_cached_query, 'disturbance sequence is only defined for cached scenario'
 
@@ -376,7 +386,9 @@ if __name__ == "__main__":
     task = task_list['pen']
     scene_file = task['scene_file']
     instruction = task['instruction']
-    main = Main(scene_file, visualize=args.visualize)
+    main = Main(scene_file, visualize=args.visualize)   
+    breakpoint()
     main.perform_task(instruction,
                     rekep_program_dir=task['rekep_program_dir'] if args.use_cached_query else None,
                     disturbance_seq=task.get('disturbance_seq', None) if args.apply_disturbance else None)
+    breakpoint()

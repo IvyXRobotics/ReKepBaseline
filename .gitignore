@@ -1,3 +1,7 @@
+our_code/
+output_logs/
+vlm_query/
+
 *cache*
 **/__pycache__/**
 **/*.egg-info/

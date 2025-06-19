@@ -1,5 +1,7 @@
+import pdb
 import time
 import numpy as np
+import torch
 import os
 import datetime
 import transform_utils as T
@@ -78,6 +80,7 @@ class ReKepOGEnv:
         # initialize cameras
         self._initialize_cameras(self.config['camera'])
         self.last_og_gripper_action = 1.0
+        breakpoint()
 
     # ======================================
     # = exposed functions
@@ -135,12 +138,14 @@ class ReKepOGEnv:
         sdf_voxels = -sdf_voxels
         sdf_voxels = sdf_voxels.reshape(shape)
         self.verbose and print(f'{bcolors.WARNING}[environment.py | {get_clock_time()}] SDF voxels computed in {time.time() - start:.4f} seconds{bcolors.ENDC}')
+        breakpoint()
         return sdf_voxels
 
     def get_cam_obs(self):
         self.last_cam_obs = dict()
         for cam_id in self.cams:
             self.last_cam_obs[cam_id] = self.cams[cam_id].get_obs()  # each containing rgb, depth, points, seg
+        breakpoint()
         return self.last_cam_obs
     
     def register_keypoints(self, keypoints):
@@ -187,7 +192,8 @@ class ReKepOGEnv:
             self._keypoint2object[idx] = closest_obj
             # overwrite the keypoint with the closest point
             self.keypoints[idx] = closest_point
-
+        breakpoint()
+            
     def get_keypoint_positions(self):
         """
         Args:
@@ -205,6 +211,7 @@ class ReKepOGEnv:
             curr_pose = T.pose2mat(PoseAPI.get_world_pose(prim_path))
             keypoint = np.dot(curr_pose, np.append(keypoint_centered, 1))[:3]
             keypoint_positions.append(keypoint)
+        breakpoint()
         return np.array(keypoint_positions)
 
     def get_object_by_keypoint(self, keypoint_idx):
@@ -216,6 +223,7 @@ class ReKepOGEnv:
         Given the keypoint index, this function returns the name of the object that the keypoint is associated with.
         """
         assert hasattr(self, '_keypoint2object') and self._keypoint2object is not None, "Keypoints have not been registered yet."
+        breakpoint()
         return self._keypoint2object[keypoint_idx]
 
     def get_collision_points(self, noise=True):
@@ -256,6 +264,7 @@ class ReKepOGEnv:
                     # add to collision points
                     collision_points.append(points_transformed)
         collision_points = np.concatenate(collision_points, axis=0)
+        breakpoint()
         return collision_points
 
     def reset(self):
@@ -270,19 +279,24 @@ class ReKepOGEnv:
         self.execute_action(action, precise=True)
         self.video_cache = []
         print(f'{bcolors.HEADER}Reset done.{bcolors.ENDC}')
+        breakpoint()
 
     def is_grasping(self, candidate_obj=None):
+        breakpoint()
         return self.robot.is_grasping(candidate_obj=candidate_obj) == IsGraspingState.TRUE
 
     def get_ee_pose(self):
         ee_pos, ee_xyzw = (self.robot.get_eef_position(), self.robot.get_eef_orientation())
         ee_pose = np.concatenate([ee_pos, ee_xyzw])  # [7]
+        breakpoint()
         return ee_pose
 
     def get_ee_pos(self):
+        breakpoint()
         return self.get_ee_pose()[:3]
 
     def get_ee_quat(self):
+        breakpoint()
         return self.get_ee_pose()[3:]
     
     def get_arm_joint_postions(self):
@@ -290,6 +304,7 @@ class ReKepOGEnv:
         arm = self.robot.default_arm
         dof_idx = np.concatenate([self.robot.trunk_control_idx, self.robot.arm_control_idx[arm]])
         arm_joint_pos = self.robot.get_joint_positions()[dof_idx]
+        breakpoint()
         return arm_joint_pos
 
     def close_gripper(self):
@@ -303,6 +318,7 @@ class ReKepOGEnv:
         action[10:] = [0, 0]  # gripper: float. 0. for closed, 1. for open.
         for _ in range(30):
             self._step(action)
+        breakpoint()
         self.last_og_gripper_action = 0.0
 
     def open_gripper(self):
@@ -313,17 +329,22 @@ class ReKepOGEnv:
         for _ in range(30):
             self._step(action)
         self.last_og_gripper_action = 1.0
+        breakpoint()
 
     def get_last_og_gripper_action(self):
+        breakpoint()
         return self.last_og_gripper_action
     
     def get_gripper_open_action(self):
+        breakpoint()
         return -1.0
     
     def get_gripper_close_action(self):
+        breakpoint()
         return 1.0
     
     def get_gripper_null_action(self):
+        breakpoint()
         return 0.0
     
     def compute_target_delta_ee(self, target_pose):
@@ -332,6 +353,7 @@ class ReKepOGEnv:
         ee_pos, ee_xyzw = ee_pose[:3], ee_pose[3:]
         pos_diff = np.linalg.norm(ee_pos - target_pos)
         rot_diff = angle_between_quats(ee_xyzw, target_xyzw)
+        breakpoint()
         return pos_diff, rot_diff
 
     def execute_action(
@@ -409,23 +431,30 @@ class ReKepOGEnv:
                 pass
             else:
                 raise ValueError(f"Invalid gripper action: {gripper_action}")
-            
+            breakpoint()
             return pos_error, rot_error
     
     def sleep(self, seconds):
         start = time.time()
         while time.time() - start < seconds:
             self._step()
+        breakpoint()
     
     def save_video(self, save_path=None):
-        save_dir = os.path.join(os.path.dirname(__file__), 'videos')
+        save_dir = os.path.join(os.path.dirname(__file__), 'output_logs')
         os.makedirs(save_dir, exist_ok=True)
         if save_path is None:
             save_path = os.path.join(save_dir, f'{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.mp4')
         video_writer = imageio.get_writer(save_path, fps=30)
         for rgb in self.video_cache:
+            if isinstance(rgb, torch.Tensor):
+                rgb = rgb.cpu().numpy()  # Move to CPU and convert to numpy
+            # Ensure correct dtype and range (0-255)
+            if rgb.dtype != np.uint8:
+                rgb = rgb.astype(np.uint8)
             video_writer.append_data(rgb)
         video_writer.close()
+        breakpoint()
         return save_path
 
     # ======================================
@@ -450,6 +479,7 @@ class ReKepOGEnv:
         if pos_error < pos_threshold and rot_error < np.deg2rad(rot_threshold):
             self.verbose and print(f'{bcolors.WARNING}[environment.py | {get_clock_time()}] OSC pose reached (pos_error: {pos_error.round(4)}, rot_error: {np.rad2deg(rot_error).round(4)}){bcolors.ENDC}')
             return True, pos_error, rot_error
+        breakpoint()
         return False, pos_error, rot_error
 
     def _move_to_waypoint(self, target_pose_world, pos_threshold=0.02, rot_threshold=3.0, max_steps=10):
@@ -476,7 +506,8 @@ class ReKepOGEnv:
             _ = self._step(action=action)
             count += 1
         if count == max_steps:
-            print(f'{bcolors.WARNING}[environment.py | {get_clock_time()}] OSC pose not reached after {max_steps} steps (pos_error: {pos_errors[-1].round(4)}, rot_error: {np.rad2deg(rot_errors[-1]).round(4)}){bcolors.ENDC}')
+            print(f'{bcolors.WARNING}[environment.py | {get_clock_time()}] OSC pose not reached after {max_steps} steps (pos_error: {pos_errors[-1].round(4)}, rot_error: {np.rad2deg(rot_errors[-1]).round(4)}){bcolors.ENDC}')         
+        breakpoint()
 
     def _step(self, action=None):
         if hasattr(self, 'disturbance_seq') and self.disturbance_seq is not None:
@@ -493,6 +524,7 @@ class ReKepOGEnv:
             self.video_cache.pop(0)
             self.video_cache.append(rgb)
         self.step_counter += 1
+        breakpoint()
 
     def _initialize_cameras(self, cam_config):
         """
@@ -503,3 +535,4 @@ class ReKepOGEnv:
             cam_id = int(cam_id)
             self.cams[cam_id] = OGCamera(self.og_env, cam_config[cam_id])
         for _ in range(10): og.sim.render()
+        breakpoint()

@@ -1,3 +1,4 @@
+import pdb
 import httpx
 from httpx_socks import SyncProxyTransport
 
@@ -19,7 +20,6 @@ def encode_image(image_path):
 class ConstraintGenerator:
     def __init__(self, config):
         self.config = config
-        
         transport = SyncProxyTransport.from_url("socks5://127.0.0.1:7897")
         http_client = httpx.Client(transport=transport)
         self.client = OpenAI(api_key=os.environ['OPENAI_API_KEY'], http_client=http_client)
@@ -27,6 +27,7 @@ class ConstraintGenerator:
         self.base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), './vlm_query')
         with open(os.path.join(self.base_dir, 'prompt_template.txt'), 'r') as f:
             self.prompt_template = f.read()
+        breakpoint()
 
     def _build_prompt(self, image_path, instruction):
         img_base64 = encode_image(image_path)
@@ -51,6 +52,7 @@ class ConstraintGenerator:
                 ]
             }
         ]
+        breakpoint()
         return messages
 
     def _parse_and_save_constraints(self, output, save_dir):
@@ -78,6 +80,7 @@ class ConstraintGenerator:
                 for name in groupings[key]:
                     f.write("\n".join(functions[name]) + "\n\n")
         print(f"Constraints saved to {save_dir}")
+        breakpoint()
     
     def _parse_other_metadata(self, output):
         data_dict = dict()
@@ -114,6 +117,7 @@ class ConstraintGenerator:
         release_keypoints = release_keypoints['release_keypoints'].replace("[", "").replace("]", "").split(",")
         release_keypoints = [int(x.strip()) for x in release_keypoints]
         data_dict['release_keypoints'] = release_keypoints
+        breakpoint()
         return data_dict
 
     def _save_metadata(self, metadata):
@@ -123,6 +127,7 @@ class ConstraintGenerator:
         with open(os.path.join(self.task_dir, 'metadata.json'), 'w') as f:
             json.dump(metadata, f)
         print(f"Metadata saved to {os.path.join(self.task_dir, 'metadata.json')}")
+        breakpoint()
 
     def generate(self, img, instruction, metadata):
         """
@@ -162,4 +167,5 @@ class ConstraintGenerator:
         # save metadata
         metadata.update(self._parse_other_metadata(output))
         self._save_metadata(metadata)
+        breakpoint()
         return self.task_dir

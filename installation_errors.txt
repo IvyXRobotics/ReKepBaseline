@@ -1,6 +1,0 @@
-(0) /home/yifan/anaconda3/envs/ReKep/lib/python3.10/site-packages/omnigibson
-
-(1) /home/yifan/anaconda3/envs/ReKep/lib/python3.10/site-packages/omnigibson/objects/dataset_object.py
-# Assert that the scale does not have too small dimensions
-scale = scale.clone().detach() if isinstance(scale, th.Tensor) else th.tensor(scale)
-assert th.all(scale > 1e-4), f"Scale of {self.name} is too small: {scale}"

@@ -1,3 +1,4 @@
+import pdb
 import open3d as o3d
 import numpy as np
 import matplotlib
@@ -14,6 +15,7 @@ def add_to_visualize_buffer(visualize_buffer, visualize_points, visualize_colors
     # assert visualize_colors.max() <= 1.0 and visualize_colors.min() >= 0.0
     visualize_buffer["points"].append(visualize_points)
     visualize_buffer["colors"].append(visualize_colors)
+    breakpoint()
 
 def generate_nearby_points(point, num_points_per_side=5, half_range=0.005):
     if point.ndim == 1:
@@ -21,6 +23,7 @@ def generate_nearby_points(point, num_points_per_side=5, half_range=0.005):
         offsets_meshgrid = np.meshgrid(offsets, offsets, offsets)
         offsets_array = np.stack(offsets_meshgrid, axis=-1).reshape(-1, 3)
         nearby_points = point + offsets_array * half_range
+        breakpoint()
         return nearby_points.reshape(-1, 3)
     else:
         assert point.shape[1] == 3, "point must be (N, 3)"
@@ -30,6 +33,7 @@ def generate_nearby_points(point, num_points_per_side=5, half_range=0.005):
         offsets_meshgrid = np.meshgrid(offsets, offsets, offsets)
         offsets_array = np.stack(offsets_meshgrid, axis=-1).reshape(-1, 3)
         nearby_points = point[:, None, :] + offsets_array
+        breakpoint()
         return nearby_points
 
 class Visualizer:
@@ -45,12 +49,14 @@ class Visualizer:
             [-0.1026, 0.9332, 0.3445, 0.0],
             [0.0, 0.0, 0.0, 1.0]
         ]).T
+        breakpoint()
 
     def show_img(self, rgb):
         cv2.imshow('img', rgb[..., ::-1])
         cv2.waitKey(0)
         print('showing image, click on the window and press "ESC" to close and continue')
         cv2.destroyAllWindows()
+        breakpoint()
     
     def show_pointcloud(self, points, colors):
         # transform to viewer frame
@@ -62,6 +68,7 @@ class Visualizer:
         pcd.colors = o3d.utility.Vector3dVector(colors.astype(np.float64))
         print('visualizing pointcloud, click on the window and press "ESC" to close and continue')
         o3d.visualization.draw_geometries([pcd])
+        breakpoint()
 
     def _get_scene_points_and_colors(self):
         # scene
@@ -79,6 +86,7 @@ class Visualizer:
             scene_colors.append(cam_colors)
         scene_points = np.concatenate(scene_points, axis=0)
         scene_colors = np.concatenate(scene_colors, axis=0)
+        breakpoint()
         return scene_points, scene_colors
 
     def visualize_subgoal(self, subgoal_pose):
@@ -114,6 +122,7 @@ class Visualizer:
         visualize_points = np.concatenate(visualize_buffer["points"], axis=0)
         visualize_colors = np.concatenate(visualize_buffer["colors"], axis=0)
         self.show_pointcloud(visualize_points, visualize_colors)
+        breakpoint()
 
     def visualize_path(self, path):
         visualize_buffer = {
@@ -173,3 +182,4 @@ class Visualizer:
         visualize_points = np.concatenate(visualize_buffer["points"], axis=0)
         visualize_colors = np.concatenate(visualize_buffer["colors"], axis=0)
         self.show_pointcloud(visualize_points, visualize_colors)
+        breakpoint()

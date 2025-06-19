@@ -1,6 +1,7 @@
 """
 Adapted from OmniGibson and the Lula IK solver
 """
+import pdb
 import omnigibson.lazy as lazy
 import numpy as np
 
@@ -24,6 +25,7 @@ class IKSolver:
         self.eef_name = eef_name
         self.reset_joint_pos = reset_joint_pos
         self.world2robot_homo = world2robot_homo
+        breakpoint()
 
     def solve(
         self,
@@ -66,4 +68,5 @@ class IKSolver:
         self.config.max_num_descents = max_iterations
         # Compute target joint positions
         ik_results = lazy.lula.compute_ik_ccd(self.kinematics, ik_target_pose, self.eef_name, self.config)
+        breakpoint()
         return ik_results

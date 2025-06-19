@@ -1,3 +1,4 @@
+import pdb
 import numpy as np
 from scipy.optimize import dual_annealing, minimize
 from scipy.interpolate import RegularGridInterpolator
@@ -110,7 +111,7 @@ def objective(opt_vars,
 
     if return_debug_dict:
         return cost, debug_dict
-
+    breakpoint()
     return cost
 
 
@@ -140,6 +141,7 @@ class PathSolver:
         collision_points = np.random.rand(100, 3)
         self.solve(start_pose, end_pose, keypoints, keypoint_movable_mask, path_constraints, sdf_voxels, collision_points, None, from_scratch=True)
         self.last_opt_result = None
+        breakpoint()
 
     def _setup_sdf(self, sdf_voxels):
         # create callable sdf function with interpolation
@@ -147,6 +149,7 @@ class PathSolver:
         y = np.linspace(self.config['bounds_min'][1], self.config['bounds_max'][1], sdf_voxels.shape[1])
         z = np.linspace(self.config['bounds_min'][2], self.config['bounds_max'][2], sdf_voxels.shape[2])
         sdf_func = RegularGridInterpolator((x, y, z), sdf_voxels, bounds_error=False, fill_value=0)
+        breakpoint()
         return sdf_func
 
     def _check_opt_result(self, opt_result, path_quat, debug_dict, og_bounds):
@@ -163,6 +166,7 @@ class PathSolver:
             if not path_constraints_satisfied:
                 opt_result.success = False
                 opt_result.message += f'; path constraint not satisfied'
+        breakpoint()
         return opt_result
 
     def _center_collision_points_and_keypoints(self, ee_pose, collision_points, keypoints, keypoint_movable_mask):
@@ -170,6 +174,7 @@ class PathSolver:
         centering_transform = np.linalg.inv(ee_pose_homo)
         collision_points_centered = np.dot(collision_points, centering_transform[:3, :3].T) + centering_transform[:3, 3]
         keypoints_centered = transform_keypoints(centering_transform, keypoints, keypoint_movable_mask)
+        breakpoint()
         return collision_points_centered, keypoints_centered
 
     def solve(self,
@@ -295,7 +300,7 @@ class PathSolver:
                 options=self.config['minimizer_options'],
             )
         solve_time = time.time() - start
-
+        
         # ====================================
         # = post-process opt_result
         # ====================================
@@ -317,4 +322,5 @@ class PathSolver:
         # cache opt_result for future use if successful
         if opt_result.success:
             self.last_opt_result = copy.deepcopy(opt_result)
+        breakpoint()
         return poses_quat, debug_dict

@@ -1,3 +1,4 @@
+import pdb
 import numpy as np
 import torch
 import cv2
@@ -18,6 +19,7 @@ class KeypointProposer:
         np.random.seed(self.config['seed'])
         torch.manual_seed(self.config['seed'])
         torch.cuda.manual_seed(self.config['seed'])
+        breakpoint()
 
     def get_keypoints(self, rgb, points, masks):
         # preprocessing
@@ -43,17 +45,23 @@ class KeypointProposer:
         candidate_rigid_group_ids = candidate_rigid_group_ids[sort_idx]
         # project keypoints to image space
         projected = self._project_keypoints_to_img(rgb, candidate_pixels, candidate_rigid_group_ids, masks, features_flat)
+        breakpoint()
         return candidate_keypoints, projected
 
     def _preprocess(self, rgb, points, masks):
         # convert masks to binary masks
-        masks = [masks == uid for uid in np.unique(masks)]
+        masks_cpu = masks.cpu().numpy()
+        masks = [masks == uid for uid in np.unique(masks_cpu)]
         # ensure input shape is compatible with dinov2
         H, W, _ = rgb.shape
         patch_h = int(H // self.patch_size)
         patch_w = int(W // self.patch_size)
         new_H = patch_h * self.patch_size
         new_W = patch_w * self.patch_size
+
+        if isinstance(rgb, torch.Tensor):
+            rgb = rgb.detach().cpu().numpy()
+
         transformed_rgb = cv2.resize(rgb, (new_W, new_H))
         transformed_rgb = transformed_rgb.astype(np.float32) / 255.0  # float32 [H, W, 3]
         # shape info
@@ -63,6 +71,7 @@ class KeypointProposer:
             'patch_h': patch_h,
             'patch_w': patch_w,
         }
+        breakpoint()
         return transformed_rgb, rgb, points, masks, shape_info
     
     def _project_keypoints_to_img(self, rgb, candidate_pixels, candidate_rigid_group_ids, masks, features_flat):
@@ -81,6 +90,7 @@ class KeypointProposer:
             color = (255, 0, 0)
             cv2.putText(projected, str(keypoint_count), org, cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
             keypoint_count += 1
+        breakpoint()
         return projected
 
     @torch.inference_mode()
@@ -101,6 +111,7 @@ class KeypointProposer:
                                                 size=(img_h, img_w),
                                                 mode='bilinear').permute(0, 2, 3, 1).squeeze(0)  # float32 [H, W, feature_dim]
         features_flat = interpolated_feature_grid.reshape(-1, interpolated_feature_grid.shape[-1])  # float32 [H*W, feature_dim]
+        breakpoint()
         return features_flat
 
     def _cluster_features(self, points, features_flat, masks):
@@ -108,6 +119,8 @@ class KeypointProposer:
         candidate_pixels = []
         candidate_rigid_group_ids = []
         for rigid_group_id, binary_mask in enumerate(masks):
+            if isinstance(binary_mask, torch.Tensor):
+                binary_mask = binary_mask.detach().cpu().numpy()
             # ignore mask that is too large
             if np.mean(binary_mask) > self.config['max_mask_ratio']:
                 continue
@@ -148,7 +161,7 @@ class KeypointProposer:
         candidate_keypoints = np.array(candidate_keypoints)
         candidate_pixels = np.array(candidate_pixels)
         candidate_rigid_group_ids = np.array(candidate_rigid_group_ids)
-
+        breakpoint()
         return candidate_keypoints, candidate_pixels, candidate_rigid_group_ids
 
     def _merge_clusters(self, candidate_keypoints):
@@ -158,4 +171,5 @@ class KeypointProposer:
         for center in cluster_centers:
             dist = np.linalg.norm(candidate_keypoints - center, axis=-1)
             merged_indices.append(np.argmin(dist))
+        breakpoint()
         return merged_indices

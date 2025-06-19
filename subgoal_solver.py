@@ -1,3 +1,4 @@
+import pdb
 import numpy as np
 import time
 import copy
@@ -108,7 +109,7 @@ def objective(opt_vars,
 
     if return_debug_dict:
         return cost, debug_dict
-
+    breakpoint()
     return cost
 
 
@@ -120,6 +121,7 @@ class SubgoalSolver:
         self.last_opt_result = None
         # warmup
         self._warmup()
+        breakpoint()
 
     def _warmup(self):
         ee_pose = np.array([0.0, 0.0, 0.0, 0, 0, 0, 1])
@@ -131,6 +133,7 @@ class SubgoalSolver:
         collision_points = np.random.rand(100, 3)
         self.solve(ee_pose, keypoints, keypoint_movable_mask, goal_constraints, path_constraints, sdf_voxels, collision_points, True, None, from_scratch=True)
         self.last_opt_result = None
+        breakpoint()
 
     def _setup_sdf(self, sdf_voxels):
         # create callable sdf function with interpolation
@@ -138,6 +141,7 @@ class SubgoalSolver:
         y = np.linspace(self.config['bounds_min'][1], self.config['bounds_max'][1], sdf_voxels.shape[1])
         z = np.linspace(self.config['bounds_min'][2], self.config['bounds_max'][2], sdf_voxels.shape[2])
         sdf_func = RegularGridInterpolator((x, y, z), sdf_voxels, bounds_error=False, fill_value=0)
+        breakpoint()
         return sdf_func
 
     def _check_opt_result(self, opt_result, debug_dict):
@@ -166,12 +170,14 @@ class SubgoalSolver:
         if 'ik_feasible' in debug_dict and not debug_dict['ik_feasible']:
             opt_result.success = False
             opt_result.message += f'; ik not feasible'
+        breakpoint()
         return opt_result
     
     def _center_collision_points_and_keypoints(self, ee_pose_homo, collision_points, keypoints, keypoint_movable_mask):
         centering_transform = np.linalg.inv(ee_pose_homo)
         collision_points_centered = np.dot(collision_points, centering_transform[:3, :3].T) + centering_transform[:3, 3]
         keypoints_centered = transform_keypoints(centering_transform, keypoints, keypoint_movable_mask)
+        breakpoint()
         return collision_points_centered, keypoints_centered
 
     def solve(self,
@@ -202,6 +208,7 @@ class SubgoalSolver:
             - result (scipy.optimize.OptimizeResult): optimization result.
             - debug_dict (dict): debug information.
         """
+
         # downsample collision points
         if collision_points is not None and collision_points.shape[0] > self.config['max_collision_points']:
             collision_points = farthest_point_sampling(collision_points, self.config['max_collision_points'])
@@ -291,4 +298,5 @@ class SubgoalSolver:
         # cache opt_result for future use if successful
         if opt_result.success:
             self.last_opt_result = copy.deepcopy(opt_result)
+        breakpoint()
         return sol, debug_dict
