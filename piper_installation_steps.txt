@@ -1,0 +1,17 @@
+(-) piper isaac sim github
+
+(-) edit mesh absolute path
+
+(-) copy urdf and usd into omnigibson
+
+(-) base link articulation root
+
+(-) create camera link 6, xyz orient = 180, 0, 180, xyz translate = 0, 0.075, 0.045
+
+(-) robots/__init__.py
+
+(-) robots/piper.py
+
+(-) yaml
+
+(-) 

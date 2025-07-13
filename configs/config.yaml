@@ -31,26 +31,37 @@ env:
 
   robot:
     robot_config:
-      name: Fetch
-      type: Fetch
+      name: Piper # Fetch, Piper
+      type: Piper # Fetch, Piper
       obs_modalities: [rgb, depth]
       action_modalities: continuous
       action_normalize: False
-      position: [-0.8, 0.0, 0.]
+      position: [-0.30, 0.3, 0.7163046002388] # [-0.8, 0.0, 0.] for Fetch, [-0.30, 0.3, 0.7163046002388] for Piper
       grasping_mode: assisted
 
+      # # For Fetch
+      # controller_config:
+      #   base:
+      #     name: DifferentialDriveController
+      #   arm_0:
+      #     name: OperationalSpaceController
+      #     kp: 250
+      #     kp_limits: [50, 400]
+      #     damping_ratio: 0.6
+      #   gripper_0:
+      #     name: MultiFingerGripperController
+      #     command_input_limits: [0.0, 1.0]
+      #     mode: smooth
+      #   camera:
+      #     name: JointController
+
+      # For Piper
       controller_config:
-        base:
-          name: DifferentialDriveController
         arm_0:
-          name: OperationalSpaceController
-          kp: 250
-          kp_limits: [50, 400]
-          damping_ratio: 0.6
+          name: InverseKinematicsController
         gripper_0:
-          name: MultiFingerGripperController
+          name: JointController
           command_input_limits: [0.0, 1.0]
-          mode: smooth
         camera:
           name: JointController
 
