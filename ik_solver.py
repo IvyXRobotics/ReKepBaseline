@@ -64,6 +64,10 @@ class IKSolver:
         ik_target_pose = lazy.lula.Pose3(lazy.lula.Rotation3(target_pose_rot), target_pose_pos)
         # Set the cspace seed and tolerance
         initial_joint_pos = self.reset_joint_pos if initial_joint_pos is None else np.array(initial_joint_pos)
+        # Patch: ensure 8D seed for Piper
+        if self.robot_name == "piper" and len(initial_joint_pos) == 6:
+            gripper_defaults = self.reset_joint_pos[6:] if len(self.reset_joint_pos) == 8 else [1.0, 1.0]
+            initial_joint_pos = np.concatenate([initial_joint_pos, gripper_defaults])
         self.config.cspace_seeds = [initial_joint_pos]
         self.config.position_tolerance = position_tolerance
         self.config.orientation_tolerance = orientation_tolerance

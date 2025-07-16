@@ -36,7 +36,7 @@ env:
       obs_modalities: [rgb, depth]
       action_modalities: continuous
       action_normalize: False
-      position: [-0.30, 0.0, 0.65] # [-0.8, 0.0, 0.] for Fetch, [-0.30, 0.3, 0.7163046002388] for Piper
+      position: [-0.40, 0.0, 0.65] # [-0.8, 0.0, 0.] for Fetch, [-0.30, 0.3, 0.7163046002388] for Piper
       grasping_mode: assisted
 
       # # For Fetch
