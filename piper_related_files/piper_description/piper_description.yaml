@@ -1,0 +1,51 @@
+# Piper robot descriptor YAML
+# Generated following the structure used in OmniGibson's vx300s descriptor example
+
+api_version: 1.0
+
+cspace:
+    - joint1
+    - joint2
+    - joint3
+    - joint4
+    - joint5
+    - joint6
+    - joint7
+    - joint8
+
+root_link: base_link
+subtree_root_link: base_link
+
+default_q: [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.01
+]
+
+cspace_to_urdf_rules: []
+
+composite_task_spaces: []
+
+collision_spheres:
+    - joint1:
+        - "center": [ 0.0, 0.0, 0.0 ]
+          "radius": 0.001
+    - joint2:
+        - "center": [ 0.0, 0.0, 0.0 ]
+          "radius": 0.001
+    - joint3:
+        - "center": [ 0.0, 0.0, 0.0 ]
+          "radius": 0.001
+    - joint4:
+        - "center": [ 0.0, 0.0, 0.0 ]
+          "radius": 0.001
+    - joint5:
+        - "center": [ 0.0, 0.0, 0.0 ]
+          "radius": 0.001
+    - joint6:
+        - "center": [ 0.0, 0.0, 0.0 ]
+          "radius": 0.001
+    - joint7:
+        - "center": [ 0.0, 0.0, 0.0 ]
+          "radius": 0.001
+    - joint8:
+        - "center": [ 0.0, 0.0, 0.0 ]
+          "radius": 0.001
