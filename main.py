@@ -41,7 +41,7 @@ class Main:
         # initialize environment
         self.env = ReKepOGEnv(global_config['env'], scene_file, verbose=False)
         # setup ik solver (for reachability cost)
-        assert isinstance(self.env.robot, Fetch), "The IK solver assumes the robot is a Fetch robot"
+        # assert isinstance(self.env.robot, Fetch), "The IK solver assumes the robot is a Fetch robot"
         ik_solver = IKSolver(
             robot_description_path=self.env.robot.robot_arm_descriptor_yamls[self.env.robot.default_arm],
             robot_urdf_path=self.env.robot.urdf_path,

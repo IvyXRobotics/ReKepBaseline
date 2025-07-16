@@ -87,8 +87,7 @@ class ReKepOGEnv:
             ])
             self.reset_joint_pos = self.robot.reset_joint_pos[dof_idx]
         elif self.robot.name.lower() == "piper":
-            dof_idx = self.robot.arm_control_idx[self.robot.default_arm]
-            self.reset_joint_pos = self.robot.reset_joint_pos[dof_idx]
+            self.reset_joint_pos = self.robot.reset_joint_pos
         else:
             raise ValueError(f"Unsupported robot: {self.robot.name}")
         
