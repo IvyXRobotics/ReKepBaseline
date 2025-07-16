@@ -462,6 +462,33 @@
                 "joints": {},
                 "non_kin": {}
             },
+            "table_1": {
+                "root_link": {
+                    "pos": [
+                        0.13507460057735443,
+                        -0.020923776552081108,
+                        0.5174875855445862
+                    ],
+                    "ori": [
+                        5.044171302870382e-09,
+                        -1.635271473787725e-09,
+                        0.002193866763263941,
+                        0.9999977946281433
+                    ],
+                    "lin_vel": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "ang_vel": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "joints": {},
+                "non_kin": {}
+            },
             "marker_sphere": {
                 "root_link": {
                     "pos": [
@@ -829,6 +856,18 @@
                     "fixed_base": true,
                     "in_rooms": "",
                     "bddl_object_scope": null
+                }
+            },
+            "table_1": {
+                "class_module": "omnigibson.objects.dataset_object",
+                "class_name": "DatasetObject",
+                "args": {
+                    "name": "table_1",
+                    "prim_path": "/World/table_1",
+                    "category": "breakfast_table",
+                    "model": "dnsjnv",
+                    "uuid": 88058023,
+                    "scale": 2
                 }
             },
             "marker_sphere": {

@@ -12,6 +12,7 @@ import omnigibson as og
 from omnigibson.macros import gm
 from omnigibson.utils.usd_utils import PoseAPI, mesh_prim_mesh_to_trimesh_mesh, mesh_prim_shape_to_trimesh_mesh
 from omnigibson.robots.fetch import Fetch
+from omnigibson.robots.piper import Piper
 from omnigibson.controllers import IsGraspingState
 from og_utils import OGCamera
 from utils import (
@@ -54,6 +55,7 @@ def custom_clip_control(self, control):
     return control
 
 Fetch._initialize = ManipulationRobot._initialize
+Piper._initialize = ManipulationRobot._initialize
 BaseController.clip_control = custom_clip_control
 
 class ReKepOGEnv:
@@ -73,9 +75,23 @@ class ReKepOGEnv:
         for _ in range(10): og.sim.step()
         # robot vars
         self.robot = self.og_env.robots[0]
-        dof_idx = np.concatenate([self.robot.trunk_control_idx,
-                                  self.robot.arm_control_idx[self.robot.default_arm]])
-        self.reset_joint_pos = self.robot.reset_joint_pos[dof_idx]
+        # dof_idx = np.concatenate([self.robot.trunk_control_idx,
+        #                           self.robot.arm_control_idx[self.robot.default_arm]])
+        # self.reset_joint_pos = self.robot.reset_joint_pos[dof_idx]
+        
+        # Robot-dependent DOF handling
+        if self.robot.name.lower() == "fetch":
+            dof_idx = np.concatenate([
+                self.robot.trunk_control_idx,
+                self.robot.arm_control_idx[self.robot.default_arm]
+            ])
+            self.reset_joint_pos = self.robot.reset_joint_pos[dof_idx]
+        elif self.robot.name.lower() == "piper":
+            dof_idx = self.robot.arm_control_idx[self.robot.default_arm]
+            self.reset_joint_pos = self.robot.reset_joint_pos[dof_idx]
+        else:
+            raise ValueError(f"Unsupported robot: {self.robot.name}")
+        
         self.world2robot_homo = T.pose_inv(T.pose2mat(self.robot.get_position_orientation()))
         # initialize cameras
         self._initialize_cameras(self.config['camera'])
@@ -94,7 +110,9 @@ class ReKepOGEnv:
         start = time.time()
         exclude_names = ['wall', 'floor', 'ceiling']
         if exclude_robot:
-            exclude_names += ['fetch', 'robot']
+            robot_name_lower = self.robot.name.lower()
+            exclude_names += [robot_name_lower, 'robot']
+            # exclude_names += ['fetch', 'robot']
         if exclude_obj_in_hand:
             assert self.config['robot']['robot_config']['grasping_mode'] in ['assisted', 'sticky'], "Currently only supported for assisted or sticky grasping"
             in_hand_obj = self.robot._ag_obj_in_hand[self.robot.default_arm]
@@ -161,7 +179,9 @@ class ReKepOGEnv:
         self.keypoints = keypoints
         self._keypoint_registry = dict()
         self._keypoint2object = dict()
-        exclude_names = ['wall', 'floor', 'ceiling', 'table', 'fetch', 'robot']
+        # exclude_names = ['wall', 'floor', 'ceiling', 'table', 'fetch', 'robot']
+        robot_name = self.robot.name.lower()
+        exclude_names = ['wall', 'floor', 'ceiling', 'table', robot_name, 'robot']
         for idx, keypoint in enumerate(keypoints):
             closest_distance = np.inf
             for obj in self.og_env.scene.objects:
@@ -226,16 +246,61 @@ class ReKepOGEnv:
         breakpoint()
         return self._keypoint2object[keypoint_idx]
 
+    # def get_collision_points(self, noise=True):
+    #     """
+    #     Get the points of the gripper and any object in hand.
+    #     """
+    #     # add gripper collision points
+    #     collision_points = []
+    #     for obj in self.og_env.scene.objects:
+    #         if 'fetch' in obj.name.lower():
+    #             for name, link in obj.links.items():
+    #                 if 'gripper' in name.lower() or 'wrist' in name.lower():  # wrist_roll and wrist_flex
+    #                     for collision_mesh in link.collision_meshes.values():
+    #                         mesh_prim_path = collision_mesh.prim_path
+    #                         mesh_type = collision_mesh.prim.GetPrimTypeInfo().GetTypeName()
+    #                         if mesh_type == 'Mesh':
+    #                             trimesh_object = mesh_prim_mesh_to_trimesh_mesh(collision_mesh.prim)
+    #                         else:
+    #                             trimesh_object = mesh_prim_shape_to_trimesh_mesh(collision_mesh.prim)
+    #                         world_pose_w_scale = PoseAPI.get_world_pose_with_scale(mesh_prim_path)
+    #                         trimesh_object.apply_transform(world_pose_w_scale)
+    #                         points_transformed = trimesh_object.sample(1000)
+    #                         # add to collision points
+    #                         collision_points.append(points_transformed)
+    #     # add object in hand collision points
+    #     in_hand_obj = self.robot._ag_obj_in_hand[self.robot.default_arm]
+    #     if in_hand_obj is not None:
+    #         for link in in_hand_obj.links.values():
+    #             for collision_mesh in link.collision_meshes.values():
+    #                 mesh_type = collision_mesh.prim.GetPrimTypeInfo().GetTypeName()
+    #                 if mesh_type == 'Mesh':
+    #                     trimesh_object = mesh_prim_mesh_to_trimesh_mesh(collision_mesh.prim)
+    #                 else:
+    #                     trimesh_object = mesh_prim_shape_to_trimesh_mesh(collision_mesh.prim)
+    #                 world_pose_w_scale = PoseAPI.get_world_pose_with_scale(collision_mesh.prim_path)
+    #                 trimesh_object.apply_transform(world_pose_w_scale)
+    #                 points_transformed = trimesh_object.sample(1000)
+    #                 # add to collision points
+    #                 collision_points.append(points_transformed)
+    #     collision_points = np.concatenate(collision_points, axis=0)
+    #     breakpoint()
+    #     return collision_points
     def get_collision_points(self, noise=True):
         """
         Get the points of the gripper and any object in hand.
         """
-        # add gripper collision points
         collision_points = []
+
+        robot_name = self.robot.name.lower()
+        default_arm = self.robot.default_arm
+
+        # Add gripper collision points
         for obj in self.og_env.scene.objects:
-            if 'fetch' in obj.name.lower():
-                for name, link in obj.links.items():
-                    if 'gripper' in name.lower() or 'wrist' in name.lower():  # wrist_roll and wrist_flex
+            if robot_name in obj.name.lower():
+                for link_name, link in obj.links.items():
+                    # Include likely gripper links
+                    if any(k in link_name.lower() for k in ['gripper', 'wrist', 'link7', 'link8']):
                         for collision_mesh in link.collision_meshes.values():
                             mesh_prim_path = collision_mesh.prim_path
                             mesh_type = collision_mesh.prim.GetPrimTypeInfo().GetTypeName()
@@ -246,10 +311,15 @@ class ReKepOGEnv:
                             world_pose_w_scale = PoseAPI.get_world_pose_with_scale(mesh_prim_path)
                             trimesh_object.apply_transform(world_pose_w_scale)
                             points_transformed = trimesh_object.sample(1000)
-                            # add to collision points
                             collision_points.append(points_transformed)
-        # add object in hand collision points
-        in_hand_obj = self.robot._ag_obj_in_hand[self.robot.default_arm]
+
+        # Add object in hand (if any)
+        in_hand_obj = None
+        if hasattr(self.robot, "_ag_obj_in_hand"):
+            in_hand_dict = self.robot._ag_obj_in_hand
+            if isinstance(in_hand_dict, dict) and default_arm in in_hand_dict:
+                in_hand_obj = in_hand_dict[default_arm]
+
         if in_hand_obj is not None:
             for link in in_hand_obj.links.values():
                 for collision_mesh in link.collision_meshes.values():
@@ -261,20 +331,52 @@ class ReKepOGEnv:
                     world_pose_w_scale = PoseAPI.get_world_pose_with_scale(collision_mesh.prim_path)
                     trimesh_object.apply_transform(world_pose_w_scale)
                     points_transformed = trimesh_object.sample(1000)
-                    # add to collision points
                     collision_points.append(points_transformed)
+
+        # Concatenate result
         collision_points = np.concatenate(collision_points, axis=0)
         breakpoint()
         return collision_points
 
+    # def reset(self):
+    #     self.og_env.reset()
+    #     self.robot.reset()
+    #     for _ in range(5): self._step()
+    #     self.open_gripper()
+    #     # moving arm to the side to unblock view 
+    #     ee_pose = self.get_ee_pose()
+    #     ee_pose[:3] += np.array([0.0, -0.2, -0.1])
+    #     action = np.concatenate([ee_pose, [self.get_gripper_null_action()]])
+    #     self.execute_action(action, precise=True)
+    #     self.video_cache = []
+    #     print(f'{bcolors.HEADER}Reset done.{bcolors.ENDC}')
+    #     breakpoint()
     def reset(self):
         self.og_env.reset()
         self.robot.reset()
-        for _ in range(5): self._step()
+        
+        # Let simulation stabilize
+        for _ in range(5):
+            self._step()
+
+        # Open gripper
         self.open_gripper()
-        # moving arm to the side to unblock view 
+
+        # Move arm to side to unblock view
         ee_pose = self.get_ee_pose()
-        ee_pose[:3] += np.array([0.0, -0.2, -0.1])
+
+        if self.robot.name.lower() == "fetch":
+            # move sideways and down
+            offset = np.array([0.0, -0.2, -0.1])
+        elif self.robot.name.lower() == "piper":
+            # safer movement: forward and upward to avoid gripper collision with table
+            offset = np.array([0.1, 0.0, 0.1])
+        else:
+            raise ValueError(f"Unsupported robot: {self.robot.name}")
+
+        ee_pose[:3] += offset
+
+        # Combine pose + gripper null action
         action = np.concatenate([ee_pose, [self.get_gripper_null_action()]])
         self.execute_action(action, precise=True)
         self.video_cache = []
