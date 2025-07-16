@@ -17,6 +17,8 @@ class IKSolver:
         eef_name,
         reset_joint_pos,
         world2robot_homo,
+        robot_name,
+        robot
     ):
         # Create robot description, kinematics, and config
         self.robot_description = lazy.lula.load_robot(robot_description_path, robot_urdf_path)
@@ -25,6 +27,8 @@ class IKSolver:
         self.eef_name = eef_name
         self.reset_joint_pos = reset_joint_pos
         self.world2robot_homo = world2robot_homo
+        self.robot_name=robot_name.lower()
+        self.robot=robot
         breakpoint()
 
     def solve(

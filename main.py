@@ -48,6 +48,8 @@ class Main:
             eef_name=self.env.robot.eef_link_names[self.env.robot.default_arm],
             reset_joint_pos=self.env.reset_joint_pos,
             world2robot_homo=self.env.world2robot_homo,
+            robot_name=self.env.robot.name,
+            robot=self.env.robot
         )
         # initialize solvers
         self.subgoal_solver = SubgoalSolver(global_config['subgoal_solver'], ik_solver, self.env.reset_joint_pos)
@@ -278,6 +280,79 @@ class Main:
         self.env.open_gripper()
         breakpoint()
 
+    def test_ik(self, target_point_space):
+        """
+        Solve IK for a target position, apply result, step simulation, and check EE position.
+
+        Args:
+            target_point_space (np.ndarray): (3,) world coordinates for target position.
+        """
+        
+        self.ik_solver = IKSolver(
+            robot_description_path=self.env.robot.robot_arm_descriptor_yamls[self.env.robot.default_arm],
+            robot_urdf_path=self.env.robot.urdf_path,
+            eef_name=self.env.robot.eef_link_names[self.env.robot.default_arm],
+            reset_joint_pos=self.env.reset_joint_pos,
+            world2robot_homo=self.env.world2robot_homo,
+            robot_name=self.env.robot.name,
+            robot=self.env.robot
+        )
+        assert hasattr(self, "ik_solver"), "IKSolver must be initialized"
+
+        assert target_point_space.shape == (3,), f"Expected (3,), got {target_point_space.shape}"
+
+        # Use current EE orientation for simplicity
+        current_ee_pose = self.env.get_ee_pose()
+        target_pose = current_ee_pose.copy()
+        target_pose[:3] = target_point_space
+        target_pose_mat = T.convert_pose_quat2mat(target_pose)
+
+        print(f"[test_ik] Solving IK for target point: {target_point_space}")
+
+        ik_result = self.ik_solver.solve(target_pose_mat)
+        joint_positions = ik_result.cspace_position
+
+        if not isinstance(joint_positions, torch.Tensor):
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            joint_positions = torch.tensor(joint_positions, device=device)
+        
+        joint_positions = joint_positions.to(dtype=torch.float32)
+
+        print(f"[test_ik] IK joint positions:\n{joint_positions}")
+
+        # Apply joint positions
+        if self.ik_solver.robot_name == "fetch":
+            full_joint_positions = torch.zeros(14, device='cuda:0')  # indices are [2, 4, 6, 7, 8, 9, 10, 11]
+    
+            # Example: joint_positions.shape == (8,), corresponds to indices [2, 4, 6, 7, 8, 9, 10, 11]
+            target_indices = [2, 4, 6, 7, 8, 9, 10, 11]
+            full_joint_positions[target_indices] = joint_positions
+            self.env.robot.set_joint_positions(full_joint_positions)
+            
+        elif self.ik_solver.robot_name == "piper":
+            self.env.robot.set_joint_positions(joint_positions)
+
+        # Step simulation a few times to update EE pose
+        for _ in range(20):
+            self.env._step()
+
+        # Check actual EE position now
+        actual_ee_pos = self.env.get_ee_pos()
+        actual_ee_pos_np = actual_ee_pos.cpu().numpy() if isinstance(actual_ee_pos, torch.Tensor) else actual_ee_pos
+        target_point_space_np = target_point_space.cpu().numpy() if isinstance(target_point_space, torch.Tensor) else target_point_space
+        pos_error = np.linalg.norm(actual_ee_pos_np - target_point_space_np)
+
+        print(f"[test_ik] Target EE position: {target_point_space}")
+        print(f"[test_ik] Actual EE position: {actual_ee_pos}")
+        print(f"[test_ik] Position error: {pos_error:.6f}")
+
+        if pos_error < 0.02:  # 2 cm tolerance; you can adjust this
+            print("[test_ik] IK test passed.")
+        else:
+            print("[test_ik] IK test failed.")
+        
+        breakpoint()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, default='pen', help='task to perform')
@@ -375,20 +450,42 @@ if __name__ == "__main__":
             yield disturbance(counter)
             counter += 1
 
-    task_list = {
-        'pen': {
-            'scene_file': './configs/og_scene_file_pen.json',
-            'instruction': 'reorient the white pen and drop it upright into the black pen holder',
-            'rekep_program_dir': './vlm_query/pen',
-            'disturbance_seq': {1: stage1_disturbance_seq, 2: stage2_disturbance_seq, 3: stage3_disturbance_seq},
-            },
-    }
-    task = task_list['pen']
-    scene_file = task['scene_file']
-    instruction = task['instruction']
-    main = Main(scene_file, visualize=args.visualize)   
-    breakpoint()
-    main.perform_task(instruction,
-                    rekep_program_dir=task['rekep_program_dir'] if args.use_cached_query else None,
-                    disturbance_seq=task.get('disturbance_seq', None) if args.apply_disturbance else None)
-    breakpoint()
+    task_name = 'cola_bottle' # pen, or cola_bottle
+    
+    if task_name == "pen":
+        task_list = {
+            'pen': {
+                'scene_file': './configs/og_scene_file_pen.json',
+                'instruction': 'reorient the white pen and drop it upright into the black pen holder',
+                'rekep_program_dir': './vlm_query/pen',
+                'disturbance_seq': {1: stage1_disturbance_seq, 2: stage2_disturbance_seq, 3: stage3_disturbance_seq},
+                },
+        }
+        task = task_list['pen']
+    elif task_name == "cola_bottle":
+        task_list = {
+            'cola_bottle': {
+                'scene_file': './configs/og_scene_file_cola_bottle.json',
+                'instruction': 'grasp the cola bottle in front of you and drop it upright into the black pen holder, try not to rotate the gripper'
+                },
+        }
+        task = task_list['cola_bottle']
+
+    test_ik = True
+
+    if test_ik:
+        main = Main('./configs/og_scene_file_test_ik.json', visualize=args.visualize)   
+        obj = main.env.og_env.scene.object_registry("name", "marker_sphere")
+        pos, orn = obj.get_position_orientation()
+        test_ik_point = pos
+        main.test_ik(pos)
+        main.env.sleep(120.0)
+    else:    
+        scene_file = task['scene_file']
+        instruction = task['instruction']
+        main = Main(scene_file, visualize=args.visualize)        
+        breakpoint()
+        main.perform_task(instruction,
+                        rekep_program_dir=task['rekep_program_dir'] if args.use_cached_query else None,
+                        disturbance_seq=task.get('disturbance_seq', None) if args.apply_disturbance else None)
+        breakpoint()
