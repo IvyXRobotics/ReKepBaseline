@@ -401,37 +401,107 @@ class ReKepOGEnv:
         breakpoint()
         return self.get_ee_pose()[3:]
     
+    # def get_arm_joint_postions(self):
+    #     assert isinstance(self.robot, Fetch), "The IK solver assumes the robot is a Fetch robot"
+    #     arm = self.robot.default_arm
+    #     dof_idx = np.concatenate([self.robot.trunk_control_idx, self.robot.arm_control_idx[arm]])
+    #     arm_joint_pos = self.robot.get_joint_positions()[dof_idx]
+    #     breakpoint()
+    #     return arm_joint_pos
     def get_arm_joint_postions(self):
-        assert isinstance(self.robot, Fetch), "The IK solver assumes the robot is a Fetch robot"
         arm = self.robot.default_arm
-        dof_idx = np.concatenate([self.robot.trunk_control_idx, self.robot.arm_control_idx[arm]])
+
+        if self.robot.name.lower() == "fetch":
+            # Fetch has trunk + arm
+            dof_idx = np.concatenate([
+                self.robot.trunk_control_idx,
+                self.robot.arm_control_idx[arm],
+            ])
+        elif self.robot.name.lower() == "piper":
+            # Piper only has arm (fixed base)
+            dof_idx = self.robot.arm_control_idx[arm]
+        else:
+            raise ValueError(f"Unsupported robot type: {self.robot.name}")
+
         arm_joint_pos = self.robot.get_joint_positions()[dof_idx]
         breakpoint()
         return arm_joint_pos
 
+
+    # def close_gripper(self):
+    #     """
+    #     Exposed interface: 1.0 for closed, -1.0 for open, 0.0 for no change
+    #     Internal OG interface: 1.0 for open, 0.0 for closed
+    #     """
+    #     if self.last_og_gripper_action == 0.0:
+    #         return
+    #     action = np.zeros(12)
+    #     action[10:] = [0, 0]  # gripper: float. 0. for closed, 1. for open.
+    #     for _ in range(30):
+    #         self._step(action)
+    #     breakpoint()
+    #     self.last_og_gripper_action = 0.0
+
     def close_gripper(self):
         """
-        Exposed interface: 1.0 for closed, -1.0 for open, 0.0 for no change
-        Internal OG interface: 1.0 for open, 0.0 for closed
+        Hardcoded gripper close for Fetch (12 DoFs) and Piper (8 DoFs).
         """
+        robot_name = self.robot.name.lower()
+
         if self.last_og_gripper_action == 0.0:
             return
-        action = np.zeros(12)
-        action[10:] = [0, 0]  # gripper: float. 0. for closed, 1. for open.
+
+        if robot_name == "fetch":
+            action = np.zeros(12)
+            action[10:] = [0.0, 0.0]  # Close Fetch gripper
+
+        elif robot_name == "piper":
+            action = np.zeros(8)
+            action[6:] = [0.0, 0.0]   # Close Piper gripper
+
+        else:
+            raise ValueError(f"Unsupported robot: {self.robot.name}")
+
         for _ in range(30):
             self._step(action)
-        breakpoint()
-        self.last_og_gripper_action = 0.0
 
+        self.last_og_gripper_action = 0.0
+        breakpoint()
+
+
+    # def open_gripper(self):
+    #     if self.last_og_gripper_action == 1.0:
+    #         return
+    #     action = np.zeros(12)
+    #     action[10:] = [1, 1]  # gripper: float. 0. for closed, 1. for open.
+    #     for _ in range(30):
+    #         self._step(action)
+    #     self.last_og_gripper_action = 1.0
+    #     breakpoint()
     def open_gripper(self):
+        """
+        Hardcoded gripper open for Fetch (12 DoFs) and Piper (8 DoFs).
+        """
+        robot_name = self.robot.name.lower()
+
         if self.last_og_gripper_action == 1.0:
             return
-        action = np.zeros(12)
-        action[10:] = [1, 1]  # gripper: float. 0. for closed, 1. for open.
+
+        if robot_name == "fetch":
+            action = np.zeros(12)
+            action[10:] = [1.0, 1.0]  # Open Fetch gripper
+        elif robot_name == "piper":
+            action = np.zeros(8)
+            action[6:] = [1.0, 1.0]   # Open Piper gripper
+        else:
+            raise ValueError(f"Unsupported robot: {self.robot.name}")
+
         for _ in range(30):
             self._step(action)
+
         self.last_og_gripper_action = 1.0
         breakpoint()
+
 
     def get_last_og_gripper_action(self):
         breakpoint()

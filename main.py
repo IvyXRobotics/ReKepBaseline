@@ -450,7 +450,7 @@ if __name__ == "__main__":
             yield disturbance(counter)
             counter += 1
 
-    task_name = 'cola_bottle' # pen, or cola_bottle
+    task_name = 'pen' # pen, or cola_bottle
     
     if task_name == "pen":
         task_list = {
