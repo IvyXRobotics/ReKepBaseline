@@ -352,6 +352,36 @@ class Main:
             print("[test_ik] IK test failed.")
         
         breakpoint()
+    
+    def test_step(self, target_point_space):
+        count = 0
+        max_steps = 100
+        while count < max_steps:
+            # Neutral quaternion (no rotation)
+            neutral_quat = np.array([0.0, 0.0, 0.0, 1.0])  # [x, y, z, w]
+
+            # Combine into 7D pose
+            target_pose_world = np.concatenate([target_point_space, neutral_quat])  # shape (7,)
+            target_pose_robot = np.dot(self.env.world2robot_homo, T.convert_pose_quat2mat(target_pose_world))
+            relative_position = target_pose_robot[:3, 3] - self.env.robot.get_relative_eef_position().numpy()
+            relative_quat = T.quat_distance(
+                    T.mat2quat(target_pose_robot[:3, :3]),
+                    self.env.robot.get_relative_eef_orientation().numpy()
+            )
+            
+            if self.env.robot.name.lower() == "fetch":
+                action = np.zeros(12)
+                action[4:7] = relative_position
+                action[7:10] = T.quat2axisangle(relative_quat)
+                action[10:] = [0.0, 0.0]
+            elif self.env.robot.name.lower() == "piper":
+                action = np.zeros(8)
+                action[0:3] = relative_position
+                action[3:6] = T.quat2axisangle(relative_quat)
+                action[6:8] = [0.0, 0.0]
+
+            _ = self.env._step(action=action)
+            count += 1
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -471,16 +501,21 @@ if __name__ == "__main__":
         }
         task = task_list['cola_bottle']
 
-    test_ik = False
+    test = "step" # ik, or step, or false
 
-    if test_ik:
-        main = Main('./configs/og_scene_file_test_ik.json', visualize=args.visualize)   
+    if test == "ik":
+        main = Main('./configs/og_scene_file_test.json', visualize=args.visualize)   
         obj = main.env.og_env.scene.object_registry("name", "marker_sphere")
         pos, orn = obj.get_position_orientation()
-        test_ik_point = pos
         main.test_ik(pos)
         main.env.sleep(120.0)
-    else:    
+    elif test == "step":
+        main = Main('./configs/og_scene_file_test.json', visualize=args.visualize)   
+        obj = main.env.og_env.scene.object_registry("name", "marker_sphere")
+        pos, orn = obj.get_position_orientation()
+        main.test_step(pos)
+        main.env.sleep(120.0)
+    elif test == "false":    
         scene_file = task['scene_file']
         instruction = task['instruction']
         main = Main(scene_file, visualize=args.visualize)        

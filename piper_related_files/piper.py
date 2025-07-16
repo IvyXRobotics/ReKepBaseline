@@ -144,7 +144,7 @@ class Piper(ManipulationRobot):
 
     @property
     def eef_link_names(self):
-        return {self.default_arm: "link6"}
+        return {self.default_arm: "link8"}
 
     @property
     def finger_link_names(self):

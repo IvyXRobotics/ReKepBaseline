@@ -395,18 +395,21 @@ class ReKepOGEnv:
 
     def get_ee_pose(self):
         if self.robot.name.lower() == "piper":
-            # Get positions of link6, link7, link8
-            link6_pos = self.robot.links["link6"].get_position()
-            link7_pos = self.robot.links["link7"].get_position()
-            link8_pos = self.robot.links["link8"].get_position()
+            ee_pos = self.robot.links["link8"].get_position_orientation()[0]
+            ee_xyzw = self.robot.links["link8"].get_position_orientation()[1]
 
-            # Compute mid-point between fingers and offset vector
-            finger_center = 0.5 * (link7_pos + link8_pos)
-            offset_vector = finger_center - link6_pos
-            ee_pos = link6_pos + 0.95 * offset_vector
+            # # Get positions of link6, link7, link8
+            # link6_pos = self.robot.links["link6"].get_position()
+            # link7_pos = self.robot.links["link7"].get_position()
+            # link8_pos = self.robot.links["link8"].get_position()
 
-            # Orientation from link6 (same as original EEF)
-            ee_xyzw = self.robot.links["link6"].get_orientation()
+            # # Compute mid-point between fingers and offset vector
+            # finger_center = 0.5 * (link7_pos + link8_pos)
+            # offset_vector = finger_center - link6_pos
+            # ee_pos = link6_pos + 0.95 * offset_vector
+
+            # # Orientation from link6
+            # ee_xyzw = self.robot.links["link6"].get_orientation()
         else:
             # Default for Fetch or other robots
             ee_pos = self.robot.get_eef_position()
@@ -660,8 +663,13 @@ class ReKepOGEnv:
         """
         this is supposed to be for true ee pose (franka hand) in robot frame
         """
-        current_pos = self.robot.get_eef_position()
-        current_xyzw = self.robot.get_eef_orientation()
+        if self.robot.name.lower() == "fetch":
+            current_pos = self.robot.get_eef_position()
+            current_xyzw = self.robot.get_eef_orientation()
+        elif self.robot.name.lower() == "piper":
+            current_pos = self.robot.links["link8"].get_position_orientation()[0]
+            current_xyzw = self.robot.links["link8"].get_position_orientation()[1]
+
         current_rotmat = T.quat2mat(current_xyzw)
         target_rotmat = T.quat2mat(target_xyzw)
         # calculate position delta
