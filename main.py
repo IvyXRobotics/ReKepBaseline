@@ -355,7 +355,7 @@ class Main:
     
     def test_step(self, target_point_space):
         count = 0
-        max_steps = 100
+        max_steps = 100000
         while count < max_steps:
             # Neutral quaternion (no rotation)
             neutral_quat = np.array([0.0, 0.0, 0.0, 1.0])  # [x, y, z, w]
@@ -377,9 +377,8 @@ class Main:
             elif self.env.robot.name.lower() == "piper":
                 action = np.zeros(8)
                 action[0:3] = relative_position
-                action[3:6] = T.quat2axisangle(relative_quat)
-                action[6:8] = [0.0, 0.0]
-
+                action[3:7] = relative_quat #TODO
+                action[7] = 0.0
             _ = self.env._step(action=action)
             count += 1
 
