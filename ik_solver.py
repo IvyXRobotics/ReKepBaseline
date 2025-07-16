@@ -59,6 +59,17 @@ class IKSolver:
         """
         # convert target pose to robot base frame
         target_pose_robot = np.dot(self.world2robot_homo, target_pose_homo)
+        if self.robot_name == "piper":
+            link6_pos = self.robot.links["link6"].get_position()
+            link7_pos = self.robot.links["link7"].get_position()
+            link8_pos = self.robot.links["link8"].get_position()
+            finger_center = 0.5 * (link7_pos + link8_pos)
+            offset_vector_world = 0.95 * ((finger_center - link6_pos).numpy())
+            # Convert offset to robot base frame (only rotation applies)
+            R_world_to_robot = self.world2robot_homo[:3, :3]
+            offset_vector_robot = R_world_to_robot @ offset_vector_world
+            target_pose_robot[:3, 3] -= offset_vector_robot
+
         target_pose_pos = target_pose_robot[:3, 3]
         target_pose_rot = target_pose_robot[:3, :3]
         ik_target_pose = lazy.lula.Pose3(lazy.lula.Rotation3(target_pose_rot), target_pose_pos)

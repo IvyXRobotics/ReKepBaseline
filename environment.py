@@ -386,11 +386,36 @@ class ReKepOGEnv:
         breakpoint()
         return self.robot.is_grasping(candidate_obj=candidate_obj) == IsGraspingState.TRUE
 
+    # def get_ee_pose(self):
+        
+    #     ee_pos, ee_xyzw = (self.robot.get_eef_position(), self.robot.get_eef_orientation())
+    #     ee_pose = np.concatenate([ee_pos, ee_xyzw])  # [7]
+    #     breakpoint()
+    #     return ee_pose
+
     def get_ee_pose(self):
-        ee_pos, ee_xyzw = (self.robot.get_eef_position(), self.robot.get_eef_orientation())
+        if self.robot.name.lower() == "piper":
+            # Get positions of link6, link7, link8
+            link6_pos = self.robot.links["link6"].get_position()
+            link7_pos = self.robot.links["link7"].get_position()
+            link8_pos = self.robot.links["link8"].get_position()
+
+            # Compute mid-point between fingers and offset vector
+            finger_center = 0.5 * (link7_pos + link8_pos)
+            offset_vector = finger_center - link6_pos
+            ee_pos = link6_pos + 0.95 * offset_vector
+
+            # Orientation from link6 (same as original EEF)
+            ee_xyzw = self.robot.links["link6"].get_orientation()
+        else:
+            # Default for Fetch or other robots
+            ee_pos = self.robot.get_eef_position()
+            ee_xyzw = self.robot.get_eef_orientation()
+
         ee_pose = np.concatenate([ee_pos, ee_xyzw])  # [7]
         breakpoint()
         return ee_pose
+
 
     def get_ee_pos(self):
         breakpoint()
