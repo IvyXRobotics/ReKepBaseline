@@ -654,32 +654,82 @@ class ReKepOGEnv:
         breakpoint()
         return False, pos_error, rot_error
 
+    # def _move_to_waypoint(self, target_pose_world, pos_threshold=0.02, rot_threshold=3.0, max_steps=10):
+    #     pos_errors = []
+    #     rot_errors = []
+    #     count = 0
+    #     while count < max_steps:
+    #         reached, pos_error, rot_error = self._check_reached_ee(target_pose_world[:3], target_pose_world[3:7], pos_threshold, rot_threshold)
+    #         pos_errors.append(pos_error)
+    #         rot_errors.append(rot_error)
+    #         if reached:
+    #             break
+    #         # convert world pose to robot pose
+    #         target_pose_robot = np.dot(self.world2robot_homo, T.convert_pose_quat2mat(target_pose_world))
+    #         # convert to relative pose to be used with the underlying controller
+    #         relative_position = target_pose_robot[:3, 3] - self.robot.get_relative_eef_position().numpy()
+    #         relative_quat = T.quat_distance(T.mat2quat(target_pose_robot[:3, :3]), self.robot.get_relative_eef_orientation().numpy())
+    #         assert isinstance(self.robot, Fetch), "this action space is only for fetch"
+    #         action = np.zeros(12)  # first 3 are base, which we don't use
+    #         action[4:7] = relative_position
+    #         action[7:10] = T.quat2axisangle(relative_quat)
+    #         action[10:] = [self.last_og_gripper_action, self.last_og_gripper_action]
+    #         # step the action
+    #         _ = self._step(action=action)
+    #         count += 1
+    #     if count == max_steps:
+    #         print(f'{bcolors.WARNING}[environment.py | {get_clock_time()}] OSC pose not reached after {max_steps} steps (pos_error: {pos_errors[-1].round(4)}, rot_error: {np.rad2deg(rot_errors[-1]).round(4)}){bcolors.ENDC}')         
+    #     breakpoint()
     def _move_to_waypoint(self, target_pose_world, pos_threshold=0.02, rot_threshold=3.0, max_steps=10):
         pos_errors = []
         rot_errors = []
         count = 0
+        robot_name = self.robot.name.lower()
+
         while count < max_steps:
-            reached, pos_error, rot_error = self._check_reached_ee(target_pose_world[:3], target_pose_world[3:7], pos_threshold, rot_threshold)
+            reached, pos_error, rot_error = self._check_reached_ee(
+                target_pose_world[:3], target_pose_world[3:7], pos_threshold, rot_threshold
+            )
             pos_errors.append(pos_error)
             rot_errors.append(rot_error)
             if reached:
                 break
-            # convert world pose to robot pose
+
+            # Convert world pose to robot-local homogeneous transform
             target_pose_robot = np.dot(self.world2robot_homo, T.convert_pose_quat2mat(target_pose_world))
-            # convert to relative pose to be used with the underlying controller
             relative_position = target_pose_robot[:3, 3] - self.robot.get_relative_eef_position().numpy()
-            relative_quat = T.quat_distance(T.mat2quat(target_pose_robot[:3, :3]), self.robot.get_relative_eef_orientation().numpy())
-            assert isinstance(self.robot, Fetch), "this action space is only for fetch"
-            action = np.zeros(12)  # first 3 are base, which we don't use
-            action[4:7] = relative_position
-            action[7:10] = T.quat2axisangle(relative_quat)
-            action[10:] = [self.last_og_gripper_action, self.last_og_gripper_action]
-            # step the action
+            relative_quat = T.quat_distance(
+                T.mat2quat(target_pose_robot[:3, :3]),
+                self.robot.get_relative_eef_orientation().numpy()
+            )
+
+            if robot_name == "fetch":
+                action = np.zeros(12)
+                action[4:7] = relative_position
+                action[7:10] = T.quat2axisangle(relative_quat)
+                action[10:] = [self.last_og_gripper_action, self.last_og_gripper_action]
+
+            elif robot_name == "piper":
+                action = np.zeros(8)
+                action[0:3] = relative_position
+                action[3:6] = T.quat2axisangle(relative_quat)
+                action[6:8] = [self.last_og_gripper_action, self.last_og_gripper_action]
+
+            else:
+                raise ValueError(f"Unsupported robot: {self.robot.name}")
+
             _ = self._step(action=action)
             count += 1
+
         if count == max_steps:
-            print(f'{bcolors.WARNING}[environment.py | {get_clock_time()}] OSC pose not reached after {max_steps} steps (pos_error: {pos_errors[-1].round(4)}, rot_error: {np.rad2deg(rot_errors[-1]).round(4)}){bcolors.ENDC}')         
+            print(
+                f'{bcolors.WARNING}[environment.py | {get_clock_time()}] '
+                f'OSC pose not reached after {max_steps} steps '
+                f'(pos_error: {pos_errors[-1]:.4f}, rot_error: {np.rad2deg(rot_errors[-1]):.4f}){bcolors.ENDC}'
+            )
+
         breakpoint()
+
 
     def _step(self, action=None):
         if hasattr(self, 'disturbance_seq') and self.disturbance_seq is not None:
