@@ -383,7 +383,13 @@ class ReKepOGEnv:
         ee_pose[:3] += offset
 
         # Combine pose + gripper null action
-        action = np.concatenate([ee_pose, [self.get_gripper_null_action()]])
+        if self.robot.name.lower() == "fetch":
+            action = np.concatenate([ee_pose, [self.get_gripper_null_action()]])
+        elif self.robot.name.lower() == "piper":
+            action = np.zeros(8)
+        elif self.robot.name.lower() == "frank":
+            action = np.zeros(8)
+
         self.execute_action(action, precise=True)
         self.video_cache = []
         print(f'{bcolors.HEADER}Reset done.{bcolors.ENDC}')

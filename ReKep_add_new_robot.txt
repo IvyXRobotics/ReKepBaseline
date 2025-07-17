@@ -28,3 +28,8 @@
           command_input_limits: [0.0, 1.0]
         camera:
           name: JointController
+          
+ 
+ 
+5. omnigibson/robots/franka.py
+self._eef_link_names = "panda_hand"   ------->   self._eef_link_names = "panda_rightfinger"

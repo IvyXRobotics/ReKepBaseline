@@ -31,12 +31,12 @@ env:
 
   robot:
     robot_config:
-      name: FrankaPanda # Fetch, Piper, FrankaPanda
-      type: FrankaPanda # Fetch, Piper, FrankaPanda
+      name: Piper # Fetch, Piper, FrankaPanda
+      type: Piper # Fetch, Piper, FrankaPanda
       obs_modalities: [rgb, depth]
       action_modalities: continuous
       action_normalize: False
-      position: [-0.40, 0.0, 0.5]  # [-0.8, 0.0, 0.] for Fetch, [-0.40, 0.0, 0.7] for Piper,  [-0.40, 0.0, 0.6] for FrankaPanda
+      position: [-0.40, 0.0, 0.6]  # [-0.8, 0.0, 0.] for Fetch, [-0.40, 0.0, 0.7] for Piper,  [-0.40, 0.0, 0.6] for FrankaPanda
       grasping_mode: assisted
 
       # # For Fetch
@@ -55,7 +55,17 @@ env:
       #   camera:
       #     name: JointController
 
-      # # For Piper
+      # For Piper
+      controller_config:
+        arm_0:
+          name: InverseKinematicsController
+        gripper_0:
+          name: MultiFingerGripperController
+          command_input_limits: [0.0, 1.0]
+        camera:
+          name: JointController
+
+      # # For FrankaPanda
       # controller_config:
       #   arm_0:
       #     name: OperationalSpaceController
@@ -67,19 +77,6 @@ env:
       #     command_input_limits: [0.0, 1.0]
       #   camera:
       #     name: JointController
-
-      # For FrankaPanda
-      controller_config:
-        arm_0:
-          name: OperationalSpaceController
-          kp: 250
-          kp_limits: [50, 400]
-          damping_ratio: 0.6
-        gripper_0:
-          name: MultiFingerGripperController
-          command_input_limits: [0.0, 1.0]
-        camera:
-          name: JointController
 
   camera:
     # recorder 

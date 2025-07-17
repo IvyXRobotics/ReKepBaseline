@@ -519,7 +519,7 @@ if __name__ == "__main__":
         }
         task = task_list['cola_bottle']
 
-    test = "false" # ik, or step, or false
+    test = "step" # ik, or step, or false
 
     if test == "ik":
         main = Main('./configs/og_scene_file_test.json', visualize=args.visualize)   
