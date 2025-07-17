@@ -36,7 +36,7 @@ env:
       obs_modalities: [rgb, depth]
       action_modalities: continuous
       action_normalize: False
-      position: [-0.40, 0.0, 0.6]  # [-0.8, 0.0, 0.] for Fetch, [-0.40, 0.0, 0.7] for Piper,  [-0.40, 0.0, 0.6] for FrankaPanda
+      position: [-0.40, 0.0, 0.7]  # [-0.8, 0.0, 0.] for Fetch, [-0.40, 0.0, 0.7] for Piper,  [-0.40, 0.0, 0.6] for FrankaPanda
       grasping_mode: assisted
 
       # # For Fetch
