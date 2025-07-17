@@ -31,29 +31,29 @@ env:
 
   robot:
     robot_config:
-      name: Fetch # Fetch, Piper
-      type: Fetch # Fetch, Piper
+      name: FrankaPanda # Fetch, Piper, FrankaPanda
+      type: FrankaPanda # Fetch, Piper, FrankaPanda
       obs_modalities: [rgb, depth]
       action_modalities: continuous
       action_normalize: False
-      position: [-0.8, 0.0, 0.]  # [-0.8, 0.0, 0.] for Fetch, [-0.30, 0.3, 0.7163046002388] for Piper
+      position: [-0.40, 0.0, 0.5]  # [-0.8, 0.0, 0.] for Fetch, [-0.40, 0.0, 0.7] for Piper,  [-0.40, 0.0, 0.6] for FrankaPanda
       grasping_mode: assisted
 
-      # For Fetch
-      controller_config:
-        base:
-          name: DifferentialDriveController
-        arm_0:
-          name: OperationalSpaceController
-          kp: 250
-          kp_limits: [50, 400]
-          damping_ratio: 0.6
-        gripper_0:
-          name: MultiFingerGripperController
-          command_input_limits: [0.0, 1.0]
-          mode: smooth
-        camera:
-          name: JointController
+      # # For Fetch
+      # controller_config:
+      #   base:
+      #     name: DifferentialDriveController
+      #   arm_0:
+      #     name: OperationalSpaceController
+      #     kp: 250
+      #     kp_limits: [50, 400]
+      #     damping_ratio: 0.6
+      #   gripper_0:
+      #     name: MultiFingerGripperController
+      #     command_input_limits: [0.0, 1.0]
+      #     mode: smooth
+      #   camera:
+      #     name: JointController
 
       # # For Piper
       # controller_config:
@@ -67,6 +67,19 @@ env:
       #     command_input_limits: [0.0, 1.0]
       #   camera:
       #     name: JointController
+
+      # For FrankaPanda
+      controller_config:
+        arm_0:
+          name: OperationalSpaceController
+          kp: 250
+          kp_limits: [50, 400]
+          damping_ratio: 0.6
+        gripper_0:
+          name: MultiFingerGripperController
+          command_input_limits: [0.0, 1.0]
+        camera:
+          name: JointController
 
   camera:
     # recorder 

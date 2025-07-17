@@ -80,7 +80,9 @@ def objective(opt_vars,
         debug_dict['ik_feasible'].append(ik_result.success)
         ik_cost += 20.0 * (ik_result.num_descents / max_iterations)
         if ik_result.success:
-            reset_reg = np.linalg.norm(ik_result.cspace_position[:-1] - reset_joint_pos[:-1].numpy())
+            # reset_reg = np.linalg.norm(ik_result.cspace_position[:-1] - reset_joint_pos[:-1].numpy())
+            ik_dim = len(ik_result.cspace_position)
+            reset_reg = np.linalg.norm(ik_result.cspace_position - reset_joint_pos[:ik_dim].numpy())
             reset_reg = np.clip(reset_reg, 0.0, 3.0)
         else:
             reset_reg = 3.0

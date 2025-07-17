@@ -331,6 +331,14 @@ class Main:
             
         elif self.ik_solver.robot_name == "piper":
             self.env.robot.set_joint_positions(joint_positions)
+        
+        elif self.ik_solver.robot_name == "frankapanda":
+            # Ensure joint_positions has 9 values (7 arm joints + 2 gripper joints)
+            if joint_positions.shape[0] == 7:
+                gripper_padding = torch.tensor([0.01, 0.01], device=joint_positions.device)
+                joint_positions = torch.cat([joint_positions, gripper_padding])
+            self.env.robot.set_joint_positions(joint_positions)
+
 
         # Step simulation a few times to update EE pose
         for _ in range(20):
@@ -381,6 +389,14 @@ class Main:
                 action[0:3] = relative_position
                 action[3:6] = T.quat2axisangle(relative_quat)              
                 action[6:8] = [0.0, 1.0]
+            
+            elif self.env.robot.name.lower() == "frankapanda":
+                # x, y, z index are 0, 1, 2
+                # right gripper index is 6, left gripper index is 7
+                action = np.zeros(8)
+                action[0:3] = relative_position
+                action[3:6] = T.quat2axisangle(relative_quat)              
+                action[6:8] = [0.0, 0.0]
 
             _ = self.env._step(action=action)
             count += 1

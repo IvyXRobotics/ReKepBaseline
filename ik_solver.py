@@ -79,6 +79,10 @@ class IKSolver:
         if self.robot_name == "piper" and len(initial_joint_pos) == 6:
             gripper_defaults = self.reset_joint_pos[6:] if len(self.reset_joint_pos) == 8 else [1.0, 1.0]
             initial_joint_pos = np.concatenate([initial_joint_pos, gripper_defaults])
+        elif self.robot_name == "frankapanda":
+            # Franka expects 7D arm only
+            if len(initial_joint_pos) != 7:
+                initial_joint_pos = self.reset_joint_pos[:7]
         self.config.cspace_seeds = [initial_joint_pos]
         self.config.position_tolerance = position_tolerance
         self.config.orientation_tolerance = orientation_tolerance
@@ -90,5 +94,7 @@ class IKSolver:
             ik_results = lazy.lula.compute_ik_ccd(self.kinematics, ik_target_pose, "link8", self.config)
         elif self.robot_name == "fetch":
             ik_results = lazy.lula.compute_ik_ccd(self.kinematics, ik_target_pose, self.eef_name, self.config)    
+        elif self.robot_name == "frankapanda":
+            ik_results = lazy.lula.compute_ik_ccd(self.kinematics, ik_target_pose, self.eef_name, self.config)  
         breakpoint()
         return ik_results

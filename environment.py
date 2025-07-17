@@ -13,6 +13,7 @@ from omnigibson.macros import gm
 from omnigibson.utils.usd_utils import PoseAPI, mesh_prim_mesh_to_trimesh_mesh, mesh_prim_shape_to_trimesh_mesh
 from omnigibson.robots.fetch import Fetch
 from omnigibson.robots.piper import Piper
+from omnigibson.robots.franka import FrankaPanda
 from omnigibson.controllers import IsGraspingState
 from og_utils import OGCamera
 from utils import (
@@ -56,6 +57,7 @@ def custom_clip_control(self, control):
 
 Fetch._initialize = ManipulationRobot._initialize
 Piper._initialize = ManipulationRobot._initialize
+FrankaPanda._initialize = ManipulationRobot._initialize
 BaseController.clip_control = custom_clip_control
 
 class ReKepOGEnv:
@@ -87,6 +89,8 @@ class ReKepOGEnv:
             ])
             self.reset_joint_pos = self.robot.reset_joint_pos[dof_idx]
         elif self.robot.name.lower() == "piper":
+            self.reset_joint_pos = self.robot.reset_joint_pos
+        elif self.robot.name.lower() == "frankapanda":
             self.reset_joint_pos = self.robot.reset_joint_pos
         else:
             raise ValueError(f"Unsupported robot: {self.robot.name}")
@@ -369,7 +373,10 @@ class ReKepOGEnv:
             offset = np.array([0.0, -0.2, -0.1])
         elif self.robot.name.lower() == "piper":
             # safer movement: forward and upward to avoid gripper collision with table
-            offset = np.array([0.1, 0.0, 0.1])
+            offset = np.array([0.0, 0.0, 0.0])
+        elif self.robot.name.lower() == "frankapanda":
+            # safer movement: forward and upward to avoid gripper collision with table
+            offset = np.array([0.0, 0.0, 0.0])
         else:
             raise ValueError(f"Unsupported robot: {self.robot.name}")
 
@@ -447,6 +454,8 @@ class ReKepOGEnv:
         elif self.robot.name.lower() == "piper":
             # Piper only has arm (fixed base)
             dof_idx = self.robot.arm_control_idx[arm]
+        elif self.robot.name.lower() == "frankapanda":
+            dof_idx = self.robot.arm_control_idx[arm]
         else:
             raise ValueError(f"Unsupported robot type: {self.robot.name}")
 
@@ -485,6 +494,10 @@ class ReKepOGEnv:
         elif robot_name == "piper":
             action = np.zeros(8)
             action[6:] = [0.0, 1.0]   # Close Piper gripper
+        
+        elif robot_name == "frankapanda":
+            action = np.zeros(8)
+            action[6:] = [0.0, 0.0]   # Close Franka gripper
 
         else:
             raise ValueError(f"Unsupported robot: {self.robot.name}")
@@ -520,6 +533,9 @@ class ReKepOGEnv:
         elif robot_name == "piper":
             action = np.zeros(8)
             action[6:] = [1.0, 0.0]   # Open Piper gripper
+        elif robot_name == "frankapanda":
+            action = np.zeros(8)
+            action[6:] = [1.0, 1.0]   # Open FrankaPanda gripper
         else:
             raise ValueError(f"Unsupported robot: {self.robot.name}")
 
@@ -669,6 +685,9 @@ class ReKepOGEnv:
         elif self.robot.name.lower() == "piper":
             current_pos = self.robot.links["link8"].get_position_orientation()[0]
             current_xyzw = self.robot.links["link8"].get_position_orientation()[1]
+        elif self.robot.name.lower() == "frankapanda":
+            current_pos = self.robot.get_eef_position()
+            current_xyzw = self.robot.get_eef_orientation()
 
         current_rotmat = T.quat2mat(current_xyzw)
         target_rotmat = T.quat2mat(target_xyzw)
@@ -746,7 +765,15 @@ class ReKepOGEnv:
                 # right gripper index is 6, left gripper index is 7
                 action = np.zeros(8)
                 action[0:3] = relative_position
-                # action[3:6] = T.quat2axisangle(relative_quat)              
+                action[3:6] = T.quat2axisangle(relative_quat)              
+                action[6:8] = [self.last_og_gripper_action, 1.0 - self.last_og_gripper_action]
+
+            elif robot_name == "frankapanda":
+                # x, y, z index are 0, 1, 2
+                # right gripper index is 6, left gripper index is 7
+                action = np.zeros(8)
+                action[0:3] = relative_position
+                action[3:6] = T.quat2axisangle(relative_quat)              
                 action[6:8] = [self.last_og_gripper_action, 1.0 - self.last_og_gripper_action]
             
             else:
