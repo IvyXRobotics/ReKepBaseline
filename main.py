@@ -375,10 +375,13 @@ class Main:
                 action[7:10] = T.quat2axisangle(relative_quat)
                 action[10:] = [0.0, 0.0]
             elif self.env.robot.name.lower() == "piper":
+                # x, y, z index are 0, 1, 2
+                # right gripper index is 6, left gripper index is 7
                 action = np.zeros(8)
                 action[0:3] = relative_position
-                action[3:7] = relative_quat #TODO
-                action[7] = 0.0
+                action[3:6] = T.quat2axisangle(relative_quat)              
+                action[6:8] = [0.0, 1.0]
+
             _ = self.env._step(action=action)
             count += 1
 
@@ -500,7 +503,7 @@ if __name__ == "__main__":
         }
         task = task_list['cola_bottle']
 
-    test = "step" # ik, or step, or false
+    test = "false" # ik, or step, or false
 
     if test == "ik":
         main = Main('./configs/og_scene_file_test.json', visualize=args.visualize)   

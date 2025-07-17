@@ -484,7 +484,7 @@ class ReKepOGEnv:
 
         elif robot_name == "piper":
             action = np.zeros(8)
-            action[6:] = [0.0, 0.0]   # Close Piper gripper
+            action[6:] = [0.0, 1.0]   # Close Piper gripper
 
         else:
             raise ValueError(f"Unsupported robot: {self.robot.name}")
@@ -519,7 +519,7 @@ class ReKepOGEnv:
             action[10:] = [1.0, 1.0]  # Open Fetch gripper
         elif robot_name == "piper":
             action = np.zeros(8)
-            action[6:] = [1.0, 1.0]   # Open Piper gripper
+            action[6:] = [1.0, 0.0]   # Open Piper gripper
         else:
             raise ValueError(f"Unsupported robot: {self.robot.name}")
 
@@ -742,11 +742,13 @@ class ReKepOGEnv:
                 action[10:] = [self.last_og_gripper_action, self.last_og_gripper_action]
 
             elif robot_name == "piper":
+                # x, y, z index are 0, 1, 2
+                # right gripper index is 6, left gripper index is 7
                 action = np.zeros(8)
                 action[0:3] = relative_position
-                action[3:6] = T.quat2axisangle(relative_quat)
-                action[6:8] = [self.last_og_gripper_action, self.last_og_gripper_action]
-
+                # action[3:6] = T.quat2axisangle(relative_quat)              
+                action[6:8] = [self.last_og_gripper_action, 1.0 - self.last_og_gripper_action]
+            
             else:
                 raise ValueError(f"Unsupported robot: {self.robot.name}")
 

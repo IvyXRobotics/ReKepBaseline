@@ -17,7 +17,14 @@ root_link: base_link
 subtree_root_link: base_link
 
 default_q: [
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.01
+    0.0,            # joint1
+    1.57,           # joint2 - lifted arm
+    -1.57,          # joint3 - bent elbow
+    0.0,            # joint4
+    0.0,            # joint5
+    0.0,            # joint6
+    0.01,           # joint7 - 25% open
+    -0.01           # joint8 - 25% open
 ]
 
 cspace_to_urdf_rules: []
