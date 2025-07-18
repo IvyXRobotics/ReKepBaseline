@@ -95,6 +95,15 @@ class IKSolver:
         elif self.robot_name == "fetch":
             ik_results = lazy.lula.compute_ik_ccd(self.kinematics, ik_target_pose, self.eef_name, self.config)    
         elif self.robot_name == "frankapanda":
+            leftfinger_position = self.robot.links["panda_leftfinger"].get_position_orientation()[0]
+            rightfinger_position = self.robot.links["panda_rightfinger"].get_position_orientation()[0]
+            finger_center = 0.5 * (leftfinger_position + rightfinger_position)
+            self.eef_offset = 0.5 * (rightfinger_position - leftfinger_position)  
+
+            rotation = ik_target_pose.rotation.matrix()
+            position = ik_target_pose.translation + self.eef_offset.cpu().numpy()
+
+            ik_target_pose = lazy.lula.Pose3(lazy.lula.Rotation3(rotation), position)
             ik_results = lazy.lula.compute_ik_ccd(self.kinematics, ik_target_pose, self.eef_name, self.config)  
         breakpoint()
         return ik_results

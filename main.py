@@ -498,7 +498,7 @@ if __name__ == "__main__":
             yield disturbance(counter)
             counter += 1
 
-    task_name = 'pen' # pen, or cola_bottle
+    task_name = 'cola_bottle' # pen, or cola_bottle
     
     if task_name == "pen":
         task_list = {
@@ -519,7 +519,7 @@ if __name__ == "__main__":
         }
         task = task_list['cola_bottle']
 
-    test = "step" # ik, or step, or false
+    test = "false" # ik, or step, or false
 
     if test == "ik":
         main = Main('./configs/og_scene_file_test.json', visualize=args.visualize)   

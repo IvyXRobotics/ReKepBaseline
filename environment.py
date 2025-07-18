@@ -386,9 +386,9 @@ class ReKepOGEnv:
         if self.robot.name.lower() == "fetch":
             action = np.concatenate([ee_pose, [self.get_gripper_null_action()]])
         elif self.robot.name.lower() == "piper":
-            action = np.zeros(8)
-        elif self.robot.name.lower() == "frank":
-            action = np.zeros(8)
+            action = np.concatenate([ee_pose, [self.get_gripper_null_action()]])
+        elif self.robot.name.lower() == "frankapanda":
+            action = np.concatenate([ee_pose, [self.get_gripper_null_action()]]) #TODO
 
         self.execute_action(action, precise=True)
         self.video_cache = []
@@ -423,6 +423,12 @@ class ReKepOGEnv:
 
             # # Orientation from link6
             # ee_xyzw = self.robot.links["link6"].get_orientation()
+        elif self.robot.name.lower() == "frankapanda":
+            leftfinger_position = self.robot.links["panda_leftfinger"].get_position_orientation()[0]
+            rightfinger_position = self.robot.links["panda_rightfinger"].get_position_orientation()[0]
+            finger_center = 0.5 * (leftfinger_position + rightfinger_position)
+            ee_pos = finger_center
+            ee_xyzw = self.robot.links["panda_leftfinger"].get_position_orientation()[1]
         else:
             # Default for Fetch or other robots
             ee_pos = self.robot.get_eef_position()
@@ -692,8 +698,13 @@ class ReKepOGEnv:
             current_pos = self.robot.links["link8"].get_position_orientation()[0]
             current_xyzw = self.robot.links["link8"].get_position_orientation()[1]
         elif self.robot.name.lower() == "frankapanda":
-            current_pos = self.robot.get_eef_position()
-            current_xyzw = self.robot.get_eef_orientation()
+            # current_pos = self.robot.get_eef_position()
+            # current_xyzw = self.robot.get_eef_orientation()
+            leftfinger_position = self.robot.links["panda_leftfinger"].get_position_orientation()[0]
+            rightfinger_position = self.robot.links["panda_rightfinger"].get_position_orientation()[0]
+            finger_center = 0.5 * (leftfinger_position + rightfinger_position)
+            current_pos = finger_center
+            current_xyzw = self.robot.links["panda_leftfinger"].get_position_orientation()[1]
 
         current_rotmat = T.quat2mat(current_xyzw)
         target_rotmat = T.quat2mat(target_xyzw)
@@ -777,6 +788,22 @@ class ReKepOGEnv:
             elif robot_name == "frankapanda":
                 # x, y, z index are 0, 1, 2
                 # right gripper index is 6, left gripper index is 7
+                leftfinger_position = self.robot.links["panda_leftfinger"].get_position_orientation()[0]
+                rightfinger_position = self.robot.links["panda_rightfinger"].get_position_orientation()[0]
+                finger_center = 0.5 * (leftfinger_position + rightfinger_position)
+
+                ee_pos = finger_center
+                ee_xyzw = self.robot.links["panda_leftfinger"].get_position_orientation()[1]
+                eef_link_pose = (ee_pos, ee_xyzw)
+                base_link_pose = self.robot.links['panda_link0'].get_position_orientation()
+                pose = T.relative_pose_transform(*eef_link_pose, *base_link_pose)
+                
+                relative_position = target_pose_robot[:3, 3] - pose[0]
+                relative_quat = T.quat_distance(
+                    T.mat2quat(target_pose_robot[:3, :3]),
+                    pose[1]
+                )
+
                 action = np.zeros(8)
                 action[0:3] = relative_position
                 action[3:6] = T.quat2axisangle(relative_quat)              
