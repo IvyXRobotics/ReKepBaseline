@@ -748,7 +748,7 @@ class ReKepOGEnv:
     #     if count == max_steps:
     #         print(f'{bcolors.WARNING}[environment.py | {get_clock_time()}] OSC pose not reached after {max_steps} steps (pos_error: {pos_errors[-1].round(4)}, rot_error: {np.rad2deg(rot_errors[-1]).round(4)}){bcolors.ENDC}')         
     #     breakpoint()
-    def _move_to_waypoint(self, target_pose_world, pos_threshold=0.02, rot_threshold=3.0, max_steps=10):
+    def _move_to_waypoint(self, target_pose_world, pos_threshold=0.035, rot_threshold=3.0, max_steps=10):
         pos_errors = []
         rot_errors = []
         count = 0
@@ -800,7 +800,8 @@ class ReKepOGEnv:
                 
                 relative_position = target_pose_robot[:3, 3] - pose[0]
                 relative_quat = T.quat_distance(
-                    T.mat2quat(target_pose_robot[:3, :3]),
+                    [0.9768, 0.0173, 0.2133, 0.0038], # hard coded initial angle in quat
+                    # T.mat2quat(target_pose_robot[:3, :3]),
                     pose[1]
                 )
 

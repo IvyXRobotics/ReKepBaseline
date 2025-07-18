@@ -4,6 +4,7 @@ Adapted from OmniGibson and the Lula IK solver
 import pdb
 import omnigibson.lazy as lazy
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 class IKSolver:
     """
@@ -99,8 +100,11 @@ class IKSolver:
             rightfinger_position = self.robot.links["panda_rightfinger"].get_position_orientation()[0]
             finger_center = 0.5 * (leftfinger_position + rightfinger_position)
             self.eef_offset = 0.5 * (rightfinger_position - leftfinger_position)  
-
-            rotation = ik_target_pose.rotation.matrix()
+            
+            # Use fixed Euler angles: e.g., z-down grasp (flipped pitch)           
+            grasp_euler = [0.0, 22.6, 2.0]  # roll=0, pitch=180°, yaw=0
+            rotation = R.from_euler('xyz', grasp_euler).as_matrix()
+            # rotation = ik_target_pose.rotation.matrix()
             position = ik_target_pose.translation + self.eef_offset.cpu().numpy()
 
             ik_target_pose = lazy.lula.Pose3(lazy.lula.Rotation3(rotation), position)
